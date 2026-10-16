@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Ultimate Library Book Management System - Pure HTML, CSS, JavaScript" />
+  <meta name="author" content="Library Management System" />
+  <title>Library Management System</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>" />
+</head>
+<body>
+
+<!-- ============================================================
+     GLOBAL LOADING SPINNER OVERLAY
+     ============================================================ -->
+<div id="globalLoader" class="global-loader" aria-hidden="true">
+  <div class="loader-spinner"></div>
+  <p class="loader-text">Loading...</p>
+</div>
+
+<!-- ============================================================
+     LOGIN PAGE
+     ============================================================ -->
+<section id="loginPage" class="page login-page is-active" aria-label="Login">
+  <div class="login-bg-shapes" aria-hidden="true">
+    <span class="shape shape-1"></span>
+    <span class="shape shape-2"></span>
+    <span class="shape shape-3"></span>
+    <span class="shape shape-4"></span>
+    <span class="shape shape-5"></span>
+  </div>
+
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-icon">📚</div>
+        <h1 class="login-title" id="loginLibraryName">City Central Library</h1>
+        <p class="login-subtitle">Library Management System</p>
+      </div>
+
+      <form id="loginForm" class="login-form" novalidate autocomplete="off">
+        <div class="form-group">
+          <label for="loginUsername" class="form-label">Username</label>
+          <div class="input-with-icon">
+            <span class="input-icon" aria-hidden="true">👤</span>
+            <input
+              type="text"
+              id="loginUsername"
+              class="form-input"
+              placeholder="Enter username"
+              value="admin"
+              required
+              aria-required="true"
+            />
+          </div>
+          <small class="form-error" id="loginUsernameError"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword" class="form-label">Password</label>
+          <div class="input-with-icon">
+            <span class="input-icon" aria-hidden="true">🔒</span>
+            <input
+              type="password"
+              id="loginPassword"
+              class="form-input"
+              placeholder="Enter password"
+              value="admin123"
+              required
+              aria-required="true"
+            />
+            <button
+              type="button"
+              id="togglePassword"
+              class="toggle-password"
+              aria-label="Show password"
+              aria-pressed="false"
+            >👁️</button>
+          </div>
+          <small class="form-error" id="loginPasswordError"></small>
+        </div>
+
+        <div class="login-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="rememberMe" class="checkbox-input" />
+            <span class="checkbox-custom" aria-hidden="true"></span>
+            <span>Remember Me</span>
+          </label>
+          <a href="#" class="login-link" id="forgotPasswordLink">Forgot Password?</a>
+        </div>
+
+        <div id="loginAlert" class="alert" role="alert" aria-live="polite" hidden></div>
+
+        <button type="submit" id="loginBtn" class="btn btn-primary btn-block btn-lg">
+          <span class="btn-text">Login</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <div class="login-hint">
+        <p><strong>Demo Credentials:</strong> admin / admin123</p>
+      </div>
+    </div>
+
+    <footer class="login-footer">
+      <p>&copy; <span id="loginYear"></span> City Central Library. All rights reserved.</p>
+    </footer>
+  </div>
+</section>
+
+<!-- ============================================================
+     APP SHELL (shown after login)
+     ============================================================ -->
+<div id="appShell" class="app-shell" hidden>
+
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
+  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <span class="sidebar-logo-icon">📚</span>
+        <div class="sidebar-logo-text">
+          <strong id="sidebarLibraryName">City Central Library</strong>
+          <small>Management System</small>
+        </div>
+      </div>
+      <button type="button" id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close sidebar">✕</button>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <ul class="nav-list">
+        <li class="nav-item">
+          <a href="#dashboard" class="nav-link is-active" data-page="dashboardPage" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">🏠</span>
+            <span class="nav-text">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#books" class="nav-link" data-page="booksPage">
+            <span class="nav-icon" aria-hidden="true">📖</span>
+            <span class="nav-text">Books</span>
+            <span class="nav-badge" id="navBooksCount">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#members" class="nav-link" data-page="membersPage">
+            <span class="nav-icon" aria-hidden="true">👥</span>
+            <span class="nav-text">Members</span>
+            <span class="nav-badge" id="navMembersCount">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#issue" class="nav-link" data-page="issuePage">
+            <span class="nav-icon" aria-hidden="true">📤</span>
+            <span class="nav-text">Issue Book</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#return" class="nav-link" data-page="returnPage">
+            <span class="nav-icon" aria-hidden="true">📥</span>
+            <span class="nav-text">Return Book</span>
+            <span class="nav-badge nav-badge-danger" id="navOverdueCount" hidden>0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#history" class="nav-link" data-page="historyPage">
+            <span class="nav-icon" aria-hidden="true">🕒</span>
+            <span class="nav-text">History</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#reports" class="nav-link" data-page="reportsPage">
+            <span class="nav-icon" aria-hidden="true">📊</span>
+            <span class="nav-text">Reports</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#settings" class="nav-link" data-page="settingsPage">
+            <span class="nav-icon" aria-hidden="true">⚙️</span>
+            <span class="nav-text">Settings</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar avatar-sm" id="sidebarAvatar">A</div>
+        <div class="sidebar-user-info">
+          <strong id="sidebarUserName">Admin</strong>
+          <small>Administrator</small>
+        </div>
+      </div>
+      <button type="button" id="sidebarLogoutBtn" class="btn btn-danger btn-sm btn-block">
+        <span aria-hidden="true">⎋</span> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile overlay when sidebar open -->
+  <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+
+  <!-- ============================================================
+       MAIN CONTENT AREA
+       ============================================================ -->
+  <main class="main-content">
+
+    <!-- ============================================================
+         TOP NAVBAR
+         ============================================================ -->
+    <header class="navbar" aria-label="Top bar">
+      <div class="navbar-left">
+        <button type="button" id="hamburgerBtn" class="hamburger-btn" aria-label="Toggle sidebar" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="navbar-title-wrap">
+          <h2 class="navbar-title" id="navbarTitle">Dashboard</h2>
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ol id="breadcrumbList">
+              <li><a href="#dashboard" data-page="dashboardPage">Home</a></li>
+              <li aria-current="page">Dashboard</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+
+      <div class="navbar-center">
+        <div class="global-search">
+          <span class="global-search-icon" aria-hidden="true">🔍</span>
+          <input
+            type="search"
+            id="globalSearch"
+            class="global-search-input"
+            placeholder="Search anything... (Ctrl+K)"
+            aria-label="Global search"
+          />
+          <kbd class="global-search-kbd">Ctrl K</kbd>
+        </div>
+      </div>
+
+      <div class="navbar-right">
+        <button type="button" id="darkModeToggle" class="icon-btn" aria-label="Toggle dark mode" aria-pressed="false">
+          <span class="icon-sun" aria-hidden="true">☀️</span>
+          <span class="icon-moon" aria-hidden="true">🌙</span>
+        </button>
+
+        <button type="button" id="notificationBell" class="icon-btn notification-bell" aria-label="Notifications">
+          <span aria-hidden="true">🔔</span>
+          <span class="notification-count" id="notificationCount" hidden>0</span>
+        </button>
+
+        <div class="user-menu">
+          <button type="button" id="userMenuBtn" class="user-menu-btn" aria-haspopup="true" aria-expanded="false">
+            <div class="avatar avatar-sm" id="navbarAvatar">A</div>
+            <span class="user-menu-name" id="navbarUserName">Admin</span>
+            <span class="user-menu-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="user-dropdown" id="userDropdown" hidden role="menu">
+            <button type="button" class="dropdown-item" data-action="profile" role="menuitem">
+              <span aria-hidden="true">👤</span> Profile
+            </button>
+            <button type="button" class="dropdown-item" data-action="settings" role="menuitem">
+              <span aria-hidden="true">⚙️</span> Settings
+            </button>
+            <div class="dropdown-divider"></div>
+            <button type="button" class="dropdown-item dropdown-item-danger" data-action="logout" role="menuitem">
+              <span aria-hidden="true">⎋</span> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============================================================
+         PAGE: DASHBOARD
+         ============================================================ -->
+    <section id="dashboardPage" class="page" aria-label="Dashboard">
+
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h1>Welcome back, <span id="welcomeUserName">Admin</span>! 👋</h1>
+          <p id="welcomeLibraryName">City Central Library</p>
+        </div>
+        <div class="welcome-clock">
+          <div class="clock-time" id="liveClockTime">00:00:00</div>
+          <div class="clock-date" id="liveClockDate">—</div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <article class="stat-card stat-card-primary">
+          <div class="stat-icon" aria-hidden="true">📚</div>
+          <div class="stat-body">
+            <div class="stat-value" id="statTotalBooks">0</div>
+            <div class="stat-label">Total Books</div>
+            <div class="stat-trend"><span class="trend-up">▲</span> in catalog</div>
+          </div>
+        </article>
+
+        <article class="stat-card stat-card-success">
+          <div class="stat-icon" aria-hidden="true">👥</div>
+          <div class="stat-body">
+            <div class="stat-value" id="statTotalMembers">0</div>
+            <div class="stat-label">Total Members</div>
+            <div class="stat-trend"><span class="trend-up">▲</span> registered</div>
+          </div>
+        </article>
+
+        <article class="stat-card stat-card-warning">
+          <div class="stat-icon" aria-hidden="true">📤</div>
+          <div class="stat-body">
+            <div class="stat-value" id="statIssuedBooks">0</div>
+            <div class="stat-label">Issued Books</div>
+            <div class="stat-trend"><span class="trend-up">▲</span> active</div>
+          </div>
+        </article>
+
+        <article class="stat-card stat-card-danger">
+          <div class="stat-icon" aria-hidden="true">⚠️</div>
+          <div class="stat-body">
+            <div class="stat-value" id="statOverdueBooks">0</div>
+            <div class="stat-label">Overdue Books</div>
+            <div class="stat-trend"><span class="trend-down">▼</span> needs attention</div>
+          </div>
+        </article>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="card card-recent-activity">
+          <div class="card-header">
+            <h3 class="card-title">🕒 Recent Activity</h3>
+            <button type="button" class="btn btn-ghost btn-sm" id="clearActivityBtn">Clear</button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-compact" id="activityTable">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="activityTableBody"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="activityEmpty" hidden>
+              <div class="empty-illustration" aria-hidden="true">📭</div>
+              <p>No activity yet</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card card-category-chart">
+          <div class="card-header">
+            <h3 class="card-title">📊 Books by Category</h3>
+          </div>
+          <div class="card-body">
+            <div id="categoryChart" class="chart-bars"></div>
+          </div>
+        </article>
+      </div>
+
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">🏆 Top 5 Most Issued Books</h3>
+        </div>
+        <div class="card-body">
+          <ol class="top-list" id="topBooksList"></ol>
+          <div class="empty-state" id="topBooksEmpty" hidden>
+            <div class="empty-illustration" aria-hidden="true">🏆</div>
+            <p>No issues recorded yet</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">⚡ Quick Actions</h3>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions">
+            <button type="button" class="quick-action-btn" data-goto="booksPage">
+              <span aria-hidden="true">➕📖</span> Add New Book
+            </button>
+            <button type="button" class="quick-action-btn" data-goto="membersPage">
+              <span aria-hidden="true">➕👤</span> Add New Member
+            </button>
+            <button type="button" class="quick-action-btn" data-goto="issuePage">
+              <span aria-hidden="true">📤</span> Issue Book
+            </button>
+            <button type="button" class="quick-action-btn" data-goto="returnPage">
+              <span aria-hidden="true">📥</span> Return Book
+            </button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============================================================
+         PAGE: BOOKS
+         ============================================================ -->
+    <section id="booksPage" class="page" aria-label="Books" hidden>
+
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title" id="bookFormTitle">➕ Add New Book</h3>
+          <button type="button" class="btn btn-ghost btn-sm" id="toggleBookFormBtn">Hide Form</button>
+        </div>
+        <div class="card-body" id="bookFormWrapper">
+          <form id="bookForm" class="form-grid" novalidate>
+            <div class="form-group">
+              <label for="bookTitle" class="form-label">Title <span class="required">*</span></label>
+              <input type="text" id="bookTitle" name="title" class="form-input" placeholder="e.g., JavaScript: The Good Parts" required />
+              <small class="form-error" data-error-for="bookTitle"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="bookAuthor" class="form-label">Author <span class="required">*</span></label>
+              <input type="text" id="bookAuthor" name="author" class="form-input" placeholder="e.g., Douglas Crockford" required />
+              <small class="form-error" data-error-for="bookAuthor"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="bookIsbn" class="form-label">ISBN <span class="required">*</span></label>
+              <input type="text" id="bookIsbn" name="isbn" class="form-input" placeholder="10 or 13 digits" required />
+              <small class="form-error" data-error-for="bookIsbn"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="bookCategory" class="form-label">Category <span class="required">*</span></label>
+              <select id="bookCategory" name="category" class="form-select" required>
+                <option value="">Select category</option>
+                <option value="Fiction">Fiction</option>
+                <option value="Non-Fiction">Non-Fiction</option>
+                <option value="Science">Science</option>
+                <option value="Technology">Technology</option>
+                <option value="History">History</option>
+                <option value="Biography">Biography</option>
+                <option value="Children">Children</option>
+                <option value="Reference">Reference</option>
+                <option value="Other">Other</option>
+              </select>
+              <small class="form-error" data-error-for="bookCategory"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="bookPublisher" class="form-label">Publisher</label>
+              <input type="text" id="bookPublisher" name="publisher" class="form-input" placeholder="e.g., O'Reilly Media" />
+              <small class="form-error" data-error-for="bookPublisher"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="bookYear" class="form-label">Publication Year</label>
+              <input type="number" id="bookYear" name="year" class="form-input" placeholder="e.g., 2020" min="1900" />
+              <small class="form-error" data-error-for="bookYear"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="bookQuantity" class="form-label">Quantity <span class="required">*</span></label>
+              <input type="number" id="bookQuantity" name="quantity" class="form-input" placeholder="e.g., 5" min="1" value="1" required />
+              <small class="form-error" data-error-for="bookQuantity"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="bookShelf" class="form-label">Shelf Number</label>
+              <input type="text" id="bookShelf" name="shelf" class="form-input" placeholder="e.g., A-12" />
+              <small class="form-error" data-error-for="bookShelf"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="bookPrice" class="form-label">Price (₹)</label>
+              <input type="number" id="bookPrice" name="price" class="form-input" placeholder="e.g., 450.00" min="0" step="0.01" />
+              <small class="form-error" data-error-for="bookPrice"></small>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="bookSubmitBtn">Save Book</button>
+              <button type="button" class="btn btn-secondary" id="bookResetBtn">Reset</button>
+            </div>
+          </form>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">📚 Books List</h3>
+          <div class="card-header-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="exportBooksBtn">⬇ Export CSV</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="printBooksBtn">🖨 Print</button>
+            <button type="button" class="btn btn-danger btn-sm" id="bulkDeleteBooksBtn" hidden>🗑 Delete Selected (<span id="bulkDeleteBooksCount">0</span>)</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="filter-bar">
+            <div class="filter-item filter-search">
+              <span class="filter-icon" aria-hidden="true">🔍</span>
+              <input type="search" id="bookSearchInput" class="form-input" placeholder="Search title, author, ISBN..." />
+            </div>
+            <div class="filter-item">
+              <select id="bookCategoryFilter" class="form-select">
+                <option value="">All Categories</option>
+                <option value="Fiction">Fiction</option>
+                <option value="Non-Fiction">Non-Fiction</option>
+                <option value="Science">Science</option>
+                <option value="Technology">Technology</option>
+                <option value="History">History</option>
+                <option value="Biography">Biography</option>
+                <option value="Children">Children</option>
+                <option value="Reference">Reference</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <select id="bookAvailabilityFilter" class="form-select">
+                <option value="">All Availability</option>
+                <option value="available">Available</option>
+                <option value="out">Out of Stock</option>
+                <option value="low">Low Stock</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <select id="bookSortSelect" class="form-select">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="title-asc">Title A → Z</option>
+                <option value="title-desc">Title Z → A</option>
+                <option value="author-asc">Author A → Z</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" id="clearBookFilters">✕ Clear Filters</button>
+            <span class="filter-result-count" id="booksResultCount">0 results</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table" id="booksTable">
+              <thead>
+                <tr>
+                  <th class="th-checkbox"><input type="checkbox" id="booksSelectAll" class="checkbox-input" aria-label="Select all" /></th>
+                  <th data-sort="id">ID</th>
+                  <th data-sort="title">Title</th>
+                  <th data-sort="author">Author</th>
+                  <th>ISBN</th>
+                  <th data-sort="category">Category</th>
+                  <th>Quantity</th>
+                  <th>Available</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="booksTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" id="booksEmpty" hidden>
+            <div class="empty-illustration" aria-hidden="true">📖</div>
+            <p>No books found</p>
+            <button type="button" class="btn btn-primary btn-sm" id="addFirstBookBtn">Add First Book</button>
+          </div>
+
+          <div class="pagination" id="booksPagination">
+            <button type="button" class="page-btn" id="booksPrevBtn">‹ Prev</button>
+            <div class="page-numbers" id="booksPageNumbers"></div>
+            <button type="button" class="page-btn" id="booksNextBtn">Next ›</button>
+            <span class="page-info" id="booksPageInfo">Showing 0 to 0 of 0 entries</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============================================================
+         PAGE: MEMBERS
+         ============================================================ -->
+    <section id="membersPage" class="page" aria-label="Members" hidden>
+
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">➕ Add New Member</h3>
+        </div>
+        <div class="card-body">
+          <form id="memberForm" class="form-grid" novalidate>
+            <div class="form-group">
+              <label for="memberName" class="form-label">Full Name <span class="required">*</span></label>
+              <input type="text" id="memberName" name="name" class="form-input" placeholder="e.g., Rahul Sharma" required />
+              <small class="form-error" data-error-for="memberName"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="memberEmail" class="form-label">Email <span class="required">*</span></label>
+              <input type="email" id="memberEmail" name="email" class="form-input" placeholder="e.g., rahul@example.com" required />
+              <small class="form-error" data-error-for="memberEmail"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="memberPhone" class="form-label">Phone <span class="required">*</span></label>
+              <input type="tel" id="memberPhone" name="phone" class="form-input" placeholder="10-digit number" maxlength="10" required />
+              <small class="form-error" data-error-for="memberPhone"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="memberType" class="form-label">Member Type <span class="required">*</span></label>
+              <select id="memberType" name="type" class="form-select" required>
+                <option value="Student">Student</option>
+                <option value="Teacher">Teacher</option>
+                <option value="Public">Public</option>
+              </select>
+              <small class="form-error" data-error-for="memberType"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="memberJoinDate" class="form-label">Join Date</label>
+              <input type="date" id="memberJoinDate" name="joinDate" class="form-input" />
+              <small class="form-error" data-error-for="memberJoinDate"></small>
+            </div>
+
+            <div class="form-group form-group-full">
+              <label for="memberAddress" class="form-label">Address</label>
+              <textarea id="memberAddress" name="address" class="form-textarea" rows="2" placeholder="Optional"></textarea>
+              <small class="form-error" data-error-for="memberAddress"></small>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="memberSubmitBtn">Save Member</button>
+              <button type="button" class="btn btn-secondary" id="memberResetBtn">Reset</button>
+            </div>
+          </form>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">👥 Members List</h3>
+          <div class="card-header-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="exportMembersBtn">⬇ Export CSV</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="printMembersBtn">🖨 Print</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <div class="filter-item filter-search">
+              <span class="filter-icon" aria-hidden="true">🔍</span>
+              <input type="search" id="memberSearchInput" class="form-input" placeholder="Search name, email, phone..." />
+            </div>
+            <div class="filter-item">
+              <select id="memberTypeFilter" class="form-select">
+                <option value="">All Types</option>
+                <option value="Student">Student</option>
+                <option value="Teacher">Teacher</option>
+                <option value="Public">Public</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <select id="memberSortSelect" class="form-select">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="name-asc">Name A → Z</option>
+                <option value="name-desc">Name Z → A</option>
+              </select>
+            </div>
+            <span class="filter-result-count" id="membersResultCount">0 results</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table" id="membersTable">
+              <thead>
+                <tr>
+                  <th class="th-checkbox"><input type="checkbox" id="membersSelectAll" class="checkbox-input" aria-label="Select all" /></th>
+                  <th>ID</th>
+                  <th>Avatar</th>
+                  <th data-sort="name">Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Type</th>
+                  <th>Joined</th>
+                  <th>Books Issued</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="membersTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" id="membersEmpty" hidden>
+            <div class="empty-illustration" aria-hidden="true">👥</div>
+            <p>No members found</p>
+          </div>
+
+          <div class="pagination" id="membersPagination">
+            <button type="button" class="page-btn" id="membersPrevBtn">‹ Prev</button>
+            <div class="page-numbers" id="membersPageNumbers"></div>
+            <button type="button" class="page-btn" id="membersNextBtn">Next ›</button>
+            <span class="page-info" id="membersPageInfo">Showing 0 to 0 of 0 entries</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============================================================
+         PAGE: ISSUE BOOK
+         ============================================================ -->
+    <section id="issuePage" class="page" aria-label="Issue Book" hidden>
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">📤 Issue a Book</h3>
+        </div>
+        <div class="card-body">
+          <form id="issueForm" class="form-grid" novalidate>
+            <div class="form-group">
+              <label for="issueMemberSelect" class="form-label">Member <span class="required">*</span></label>
+              <select id="issueMemberSelect" class="form-select" required>
+                <option value="">Select member...</option>
+              </select>
+              <small class="form-error" data-error-for="issueMemberSelect"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="issueBookSelect" class="form-label">Book <span class="required">*</span></label>
+              <select id="issueBookSelect" class="form-select" required>
+                <option value="">Select book...</option>
+              </select>
+              <small class="form-error" data-error-for="issueBookSelect"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="issueDate" class="form-label">Issue Date</label>
+              <input type="date" id="issueDate" class="form-input" disabled />
+            </div>
+
+            <div class="form-group">
+              <label for="dueDate" class="form-label">Due Date <span class="required">*</span></label>
+              <input type="date" id="dueDate" class="form-input" required />
+              <small class="form-error" data-error-for="dueDate"></small>
+            </div>
+
+            <div class="form-group form-group-full">
+              <label for="issueRemarks" class="form-label">Remarks</label>
+              <textarea id="issueRemarks" class="form-textarea" rows="2" placeholder="Optional notes"></textarea>
+            </div>
+
+            <div class="form-group form-group-full">
+              <div class="info-panel" id="issueInfoPanel" hidden>
+                <div class="info-block">
+                  <h4>Member Details</h4>
+                  <p id="issueMemberInfo">—</p>
+                </div>
+                <div class="info-block">
+                  <h4>Book Details</h4>
+                  <p id="issueBookInfo">—</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-lg" id="issueSubmitBtn">
+                <span class="btn-text">Issue Book</span>
+                <span class="btn-spinner" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="btn btn-secondary" id="issueResetBtn">Reset</button>
+            </div>
+          </form>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============================================================
+         PAGE: RETURN BOOK
+         ============================================================ -->
+    <section id="returnPage" class="page" aria-label="Return Book" hidden>
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">📥 Return a Book</h3>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <div class="filter-item filter-search">
+              <span class="filter-icon" aria-hidden="true">🔍</span>
+              <input type="search" id="returnSearchInput" class="form-input" placeholder="Search Issue ID, member, book..." />
+            </div>
+            <div class="filter-item">
+              <select id="returnStatusFilter" class="form-select">
+                <option value="active">Active / Overdue</option>
+                <option value="all">All</option>
+                <option value="overdue">Overdue Only</option>
+              </select>
+            </div>
+            <span class="filter-result-count" id="returnResultCount">0 results</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table" id="returnTable">
+              <thead>
+                <tr>
+                  <th>Issue ID</th>
+                  <th>Book</th>
+                  <th>Member</th>
+                  <th>Issue Date</th>
+                  <th>Due Date</th>
+                  <th>Days Left/Overdue</th>
+                  <th>Fine</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="returnTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" id="returnEmpty" hidden>
+            <div class="empty-illustration" aria-hidden="true">📭</div>
+            <p>No matching issued records</p>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============================================================
+         PAGE: HISTORY
+         ============================================================ -->
+    <section id="historyPage" class="page" aria-label="History" hidden>
+      <article class="card">
+        <div class="card-header">
+          <h3 class="card-title">🕒 Issued History</h3>
+          <div class="card-header-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="exportHistoryBtn">⬇ Export CSV</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="printHistoryBtn">🖨 Print</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <div class="filter-item">
+              <select id="historyStatusFilter" class="form-select">
+                <option value="">All Status</option>
+                <option value="issued">Issued</option>
+                <option value="returned">Returned</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label class="filter-label" for="historyFromDate">From</label>
+              <input type="date" id="historyFromDate" class="form-input" />
+            </div>
+            <div class="filter-item">
+              <label class="filter-label" for="historyToDate">To</label>
+              <input type="date" id="historyToDate" class="form-input" />
+            </div>
+            <div class="filter-item">
+              <select id="historyMemberFilter" class="form-select">
+                <option value="">All Members</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" id="clearHistoryFilters">✕ Clear</button>
+            <span class="filter-result-count" id="historyResultCount">0 results</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table" id="historyTable">
+              <thead>
+                <tr>
+                  <th>Issue ID</th>
+                  <th>Book</th>
+                  <th>Member</th>
+                  <th>Issue Date</th>
+                  <th>Due Date</th>
+                  <th>Return Date</th>
+                  <th>Status</th>
+                  <th>Fine</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" id="historyEmpty" hidden>
+            <div class="empty-illustration" aria-hidden="true">🕒</div>
+            <p>No history records found</p>
+          </div>
+
+          <div class="pagination" id="historyPagination">
+            <button type="button" class="page-btn" id="historyPrevBtn">‹ Prev</button>
+            <div class="page-numbers" id="historyPageNumbers"></div>
+            <button type="button" class="page-btn" id="historyNextBtn">Next ›</button>
+            <span class="page-info" id="historyPageInfo">Showing 0 to 0 of 0 entries</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============================================================
+         PAGE: REPORTS
+         ============================================================ -->
+    <section id="reportsPage" class="page" aria-label="Reports" hidden>
+      <div class="report-grid">
+        <article class="report-card" data-report="monthly">
+          <div class="report-icon" aria-hidden="true">📅</div>
+          <h3>Monthly Issue Report</h3>
+          <p>Books issued per month over the last 12 months.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-report-btn="monthly">View Report</button>
+        </article>
+
+        <article class="report-card" data-report="mostBorrowed">
+          <div class="report-icon" aria-hidden="true">🏆</div>
+          <h3>Most Borrowed Books</h3>
+          <p>Top 10 books by issue count.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-report-btn="mostBorrowed">View Report</button>
+        </article>
+
+        <article class="report-card" data-report="mostActive">
+          <div class="report-icon" aria-hidden="true">⭐</div>
+          <h3>Most Active Members</h3>
+          <p>Top 10 members by books issued.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-report-btn="mostActive">View Report</button>
+        </article>
+
+        <article class="report-card" data-report="overdue">
+          <div class="report-icon" aria-hidden="true">⚠️</div>
+          <h3>Overdue Books</h3>
+          <p>List of all currently overdue books.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-report-btn="overdue">View Report</button>
+        </article>
+
+        <article class="report-card" data-report="category">
+          <div class="report-icon" aria-hidden="true">📊</div>
+          <h3>Category Distribution</h3>
+          <p>Book count per category.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-report-btn="category">View Report</button>
+        </article>
+
+        <article class="report-card" data-report="fines">
+          <div class="report-icon" aria-hidden="true">💰</div>
+          <h3>Fine Collection Report</h3>
+          <p>Total fines collected and outstanding.</p>
+          <button type="button" class="btn btn-primary btn-sm" data-report-btn="fines">View Report</button>
+        </article>
+      </div>
+
+      <article class="card" id="reportDetailCard" hidden>
+        <div class="card-header">
+          <h3 class="card-title" id="reportDetailTitle">Report</h3>
+          <div class="card-header-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="reportExportBtn">⬇ Export CSV</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="reportPrintBtn">🖨 Print</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="reportCloseBtn">✕ Close</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="report-meta" id="reportGeneratedAt"></p>
+          <div id="reportContent"></div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============================================================
+         PAGE: SETTINGS
+         ============================================================ -->
+    <section id="settingsPage" class="page" aria-label="Settings" hidden>
+      <div class="settings-grid">
+        <article class="card">
+          <div class="card-header">
+            <h3 class="card-title">🏛 Library Information</h3>
+          </div>
+          <div class="card-body">
+            <form id="settingsLibraryForm" class="form-grid" novalidate>
+              <div class="form-group form-group-full">
+                <label for="settingsLibraryName" class="form-label">Library Name</label>
+                <input type="text" id="settingsLibraryName" class="form-input" />
+              </div>
+              <div class="form-group form-group-full">
+                <label for="settingsAddress" class="form-label">Address</label>
+                <textarea id="settingsAddress" class="form-textarea" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="settingsEmail" class="form-label">Contact Email</label>
+                <input type="email" id="settingsEmail" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label for="settingsPhone" class="form-label">Contact Phone</label>
+                <input type="tel" id="settingsPhone" class="form-input" />
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Library Info</button>
+              </div>
+            </form>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <h3 class="card-title">📏 Borrowing Rules</h3>
+          </div>
+          <div class="card-body">
+            <form id="settingsRulesForm" class="form-grid" novalidate>
+              <div class="form-group">
+                <label for="settingsFineRate" class="form-label">Fine Rate per Day (₹)</label>
+                <input type="number" id="settingsFineRate" class="form-input" min="0" step="1" />
+              </div>
+              <div class="form-group">
+                <label for="settingsBorrowDays" class="form-label">Default Borrow Days</label>
+                <input type="number" id="settingsBorrowDays" class="form-input" min="1" step="1" />
+              </div>
+              <div class="form-group">
+                <label for="settingsMaxBooks" class="form-label">Max Books per Member</label>
+                <input type="number" id="settingsMaxBooks" class="form-input" min="1" step="1" />
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Rules</button>
+              </div>
+            </form>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <h3 class="card-title">🎨 Appearance</h3>
+          </div>
+          <div class="card-body">
+            <label class="switch-row">
+              <span class="switch-label">Dark Mode</span>
+              <span class="switch">
+                <input type="checkbox" id="settingsDarkMode" class="switch-input" />
+                <span class="switch-slider" aria-hidden="true"></span>
+              </span>
+            </label>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <h3 class="card-title">💾 Data Management</h3>
+          </div>
+          <div class="card-body">
+            <div class="data-actions">
+              <button type="button" class="btn btn-secondary" id="backupDataBtn">⬇ Backup Data (JSON)</button>
+              <label class="btn btn-secondary" for="restoreFileInput">⬆ Restore Data
+                <input type="file" id="restoreFileInput" accept="application/json,.json" hidden />
+              </label>
+              <button type="button" class="btn btn-warning" id="clearActivityBtn2">🧹 Clear Activity Log</button>
+              <button type="button" class="btn btn-danger" id="resetAllDataBtn">⚠️ Reset All Data</button>
+            </div>
+            <p class="data-hint">Backups are downloaded as JSON. Keep them safe!</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <h3 class="card-title">ℹ️ About</h3>
+          </div>
+          <div class="card-body">
+            <ul class="about-list">
+              <li><strong>App:</strong> Ultimate Library Management System</li>
+              <li><strong>Version:</strong> 1.0.0</li>
+              <li><strong>Developer:</strong> Final Year Project</li>
+              <li><strong>Stack:</strong> HTML5, CSS3, Vanilla JavaScript (ES6+)</li>
+              <li><strong>Storage:</strong> Browser LocalStorage API</li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <p>&copy; <span id="appFooterYear"></span> <span id="appFooterName">City Central Library</span> — Library Management System v1.0</p>
+    </footer>
+  </main>
+</div>
+
+<!-- ============================================================
+     TOAST CONTAINER
+     ============================================================ -->
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ============================================================
+     MODAL: GENERIC CONFIRM
+     ============================================================ -->
+<div id="confirmModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+  <div class="modal-backdrop" data-close-modal="confirmModal"></div>
+  <div class="modal-card modal-sm">
+    <div class="modal-header">
+      <h3 class="modal-title" id="confirmModalTitle">Confirm</h3>
+      <button type="button" class="modal-close" data-close-modal="confirmModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-icon" id="confirmModalIcon" aria-hidden="true">⚠️</div>
+      <p class="confirm-message" id="confirmModalMessage">Are you sure?</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="confirmModalCancel">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirmModalOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: BOOK EDIT
+     ============================================================ -->
+<div id="editBookModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="editBookTitle">
+  <div class="modal-backdrop" data-close-modal="editBookModal"></div>
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="editBookTitle">Edit Book</h3>
+      <button type="button" class="modal-close" data-close-modal="editBookModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="editBookForm" class="form-grid" novalidate>
+        <input type="hidden" id="editBookId" />
+        <div class="form-group">
+          <label for="editBookTitleInput" class="form-label">Title <span class="required">*</span></label>
+          <input type="text" id="editBookTitleInput" class="form-input" required />
+          <small class="form-error" data-error-for="editBookTitleInput"></small>
+        </div>
+        <div class="form-group">
+          <label for="editBookAuthor" class="form-label">Author <span class="required">*</span></label>
+          <input type="text" id="editBookAuthor" class="form-input" required />
+          <small class="form-error" data-error-for="editBookAuthor"></small>
+        </div>
+        <div class="form-group">
+          <label for="editBookIsbn" class="form-label">ISBN <span class="required">*</span></label>
+          <input type="text" id="editBookIsbn" class="form-input" required />
+          <small class="form-error" data-error-for="editBookIsbn"></small>
+        </div>
+        <div class="form-group">
+          <label for="editBookCategory" class="form-label">Category <span class="required">*</span></label>
+          <select id="editBookCategory" class="form-select" required>
+            <option value="Fiction">Fiction</option>
+            <option value="Non-Fiction">Non-Fiction</option>
+            <option value="Science">Science</option>
+            <option value="Technology">Technology</option>
+            <option value="History">History</option>
+            <option value="Biography">Biography</option>
+            <option value="Children">Children</option>
+            <option value="Reference">Reference</option>
+            <option value="Other">Other</option>
+          </select>
+          <small class="form-error" data-error-for="editBookCategory"></small>
+        </div>
+        <div class="form-group">
+          <label for="editBookPublisher" class="form-label">Publisher</label>
+          <input type="text" id="editBookPublisher" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label for="editBookYear" class="form-label">Year</label>
+          <input type="number" id="editBookYear" class="form-input" min="1900" />
+        </div>
+        <div class="form-group">
+          <label for="editBookQuantity" class="form-label">Quantity <span class="required">*</span></label>
+          <input type="number" id="editBookQuantity" class="form-input" min="1" required />
+          <small class="form-error" data-error-for="editBookQuantity"></small>
+        </div>
+        <div class="form-group">
+          <label for="editBookShelf" class="form-label">Shelf</label>
+          <input type="text" id="editBookShelf" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label for="editBookPrice" class="form-label">Price (₹)</label>
+          <input type="number" id="editBookPrice" class="form-input" min="0" step="0.01" />
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-close-modal="editBookModal">Cancel</button>
+      <button type="button" class="btn btn-primary" id="editBookSaveBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: MEMBER EDIT
+     ============================================================ -->
+<div id="editMemberModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="editMemberTitle">
+  <div class="modal-backdrop" data-close-modal="editMemberModal"></div>
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="editMemberTitle">Edit Member</h3>
+      <button type="button" class="modal-close" data-close-modal="editMemberModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="editMemberForm" class="form-grid" novalidate>
+        <input type="hidden" id="editMemberId" />
+        <div class="form-group">
+          <label for="editMemberName" class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" id="editMemberName" class="form-input" required />
+          <small class="form-error" data-error-for="editMemberName"></small>
+        </div>
+        <div class="form-group">
+          <label for="editMemberEmail" class="form-label">Email <span class="required">*</span></label>
+          <input type="email" id="editMemberEmail" class="form-input" required />
+          <small class="form-error" data-error-for="editMemberEmail"></small>
+        </div>
+        <div class="form-group">
+          <label for="editMemberPhone" class="form-label">Phone <span class="required">*</span></label>
+          <input type="tel" id="editMemberPhone" class="form-input" maxlength="10" required />
+          <small class="form-error" data-error-for="editMemberPhone"></small>
+        </div>
+        <div class="form-group">
+          <label for="editMemberType" class="form-label">Type</label>
+          <select id="editMemberType" class="form-select">
+            <option value="Student">Student</option>
+            <option value="Teacher">Teacher</option>
+            <option value="Public">Public</option>
+          </select>
+        </div>
+        <div class="form-group form-group-full">
+          <label for="editMemberAddress" class="form-label">Address</label>
+          <textarea id="editMemberAddress" class="form-textarea" rows="2"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-close-modal="editMemberModal">Cancel</button>
+      <button type="button" class="btn btn-primary" id="editMemberSaveBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: MEMBER PROFILE
+     ============================================================ -->
+<div id="memberProfileModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="memberProfileTitle">
+  <div class="modal-backdrop" data-close-modal="memberProfileModal"></div>
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="memberProfileTitle">Member Profile</h3>
+      <button type="button" class="modal-close" data-close-modal="memberProfileModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="memberProfileBody"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="memberProfilePrintBtn">🖨 Print</button>
+      <button type="button" class="btn btn-primary" data-close-modal="memberProfileModal">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: RECEIPT (issue / return)
+     ============================================================ -->
+<div id="receiptModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
+  <div class="modal-backdrop" data-close-modal="receiptModal"></div>
+  <div class="modal-card modal-md">
+    <div class="modal-header">
+      <h3 class="modal-title" id="receiptTitle">Receipt</h3>
+      <button type="button" class="modal-close" data-close-modal="receiptModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="receiptBody"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-close-modal="receiptModal">Close</button>
+      <button type="button" class="btn btn-primary" id="receiptPrintBtn">🖨 Print Receipt</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: BOOK VIEW
+     ============================================================ -->
+<div id="viewBookModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="viewBookTitle">
+  <div class="modal-backdrop" data-close-modal="viewBookModal"></div>
+  <div class="modal-card modal-md">
+    <div class="modal-header">
+      <h3 class="modal-title" id="viewBookTitle">Book Details</h3>
+      <button type="button" class="modal-close" data-close-modal="viewBookModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="viewBookBody"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" data-close-modal="viewBookModal">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: GLOBAL SEARCH RESULTS
+     ============================================================ -->
+<div id="searchResultsModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="searchResultsTitle">
+  <div class="modal-backdrop" data-close-modal="searchResultsModal"></div>
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <h3 class="modal-title" id="searchResultsTitle">Search Results</h3>
+      <button type="button" class="modal-close" data-close-modal="searchResultsModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="searchResultsBody"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: NOTIFICATIONS
+     ============================================================ -->
+<div id="notificationsModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="notificationsTitle">
+  <div class="modal-backdrop" data-close-modal="notificationsModal"></div>
+  <div class="modal-card modal-md">
+    <div class="modal-header">
+      <h3 class="modal-title" id="notificationsTitle">Overdue Notifications</h3>
+      <button type="button" class="modal-close" data-close-modal="notificationsModal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="notificationsBody"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCRIPT
+     ============================================================ -->
+<script src="script.js"></script>
+</body>
+</html>
