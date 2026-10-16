@@ -2368,5 +2368,1085 @@ const Handlers = (() => {
     });
 
     // Bulk delete
-    document.getElementById('bulkDe
-...
+    document.getElementById('bulkDeleteBooksBtn')?.addEventListener('click', async () => {
+      const n = Books.state.selected.size;
+      const ok = await UI.confirm({
+        title: 'Delete Selected Books',
+        message: `Delete <strong>${n}</strong> selected book(s)? This cannot be undone.`,
+        confirmText: 'Delete',
+        variant: 'danger'
+      });
+      if (!ok) return;
+      const ids = [...Books.state.selected];
+      const deleted = Books.bulkDelete(ids);
+      Books.state.selected.clear();
+      UI.showToast(`${deleted} book(s) deleted.`, 'success');
+      BooksUI.render();
+      Dashboard.updateStats();
+      updateSidebarCounts();
+    });
+
+    // Export / print
+    document.getElementById('exportBooksBtn')?.addEventListener('click', () => {
+      const rows = Books.filtered().map(b => ({
+        ID: b.id, Title: b.title, Author: b.author, ISBN: b.isbn,
+        Category: b.category, Quantity: b.quantity, Available: b.available,
+        Shelf: b.shelf, Price: b.price
+      }));
+      exportToCSV(rows, 'books');
+    });
+    document.getElementById('printBooksBtn')?.addEventListener('click', () => {
+      printElement(document.getElementById('booksTable')?.closest('.card'));
+    });
+
+    // Add first book button
+    document.getElementById('addFirstBookBtn')?.addEventListener('click', () => {
+      document.getElementById('bookTitle').focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Toggle book form
+    document.getElementById('toggleBookFormBtn')?.addEventListener('click', (e) => {
+      const wrap = document.getElementById('bookFormWrapper');
+      const hidden = wrap.hidden;
+      wrap.hidden = !hidden;
+      e.target.textContent = hidden ? 'Hide Form' : 'Show Form';
+    });
+
+    // Row checkbox change (delegation)
+    document.getElementById('booksTableBody')?.addEventListener('change', (e) => {
+      if (e.target.matches('.book-row-check')) {
+        const id = e.target.dataset.id;
+        if (e.target.checked) Books.state.selected.add(id);
+        else Books.state.selected.delete(id);
+        const bulkBtn = document.getElementById('bulkDeleteBooksBtn');
+        if (Books.state.selected.size > 0) {
+          bulkBtn.hidden = false;
+          document.getElementById('bulkDeleteBooksCount').textContent = Books.state.selected.size;
+        } else {
+          bulkBtn.hidden = true;
+        }
+      }
+    });
+  };
+
+  /* ---------- Members page ---------- */
+  const initMembers = () => {
+    document.getElementById('memberForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!validateMemberForm()) return;
+      const created = Members.add(readMemberForm());
+      if (created) {
+        UI.showToast('Member added successfully.', 'success');
+        e.target.reset();
+        document.querySelectorAll('#memberForm .form-input, #memberForm .form-select, #memberForm .form-textarea').forEach(Validation.clearFieldError);
+        MembersUI.render();
+        updateSidebarCounts();
+      }
+    });
+
+    document.getElementById('memberResetBtn')?.addEventListener('click', () => {
+      document.getElementById('memberForm').reset();
+      document.querySelectorAll('#memberForm .form-input, #memberForm .form-select, #memberForm .form-textarea').forEach(Validation.clearFieldError);
+    });
+
+    ['memberName', 'memberEmail', 'memberPhone', 'memberType'].forEach(id => {
+      const el = document.getElementById(id);
+      el?.addEventListener('blur', () => validateMemberField(id));
+      el?.addEventListener('input', () => { if (el.classList.contains('is-invalid')) validateMemberField(id); });
+    });
+
+    document.getElementById('memberSearchInput')?.addEventListener('input', debounce((e) => {
+      Members.state.search = e.target.value.trim(); Members.state.page = 1; MembersUI.render();
+    }, 300));
+    document.getElementById('memberTypeFilter')?.addEventListener('change', (e) => {
+      Members.state.type = e.target.value; Members.state.page = 1; MembersUI.render();
+    });
+    document.getElementById('memberSortSelect')?.addEventListener('change', (e) => {
+      Members.state.sort = e.target.value; MembersUI.render();
+    });
+
+    document.getElementById('membersPrevBtn')?.addEventListener('click', () => {
+      if (Members.state.page > 1) { Members.state.page--; MembersUI.render(); }
+    });
+    document.getElementById('membersNextBtn')?.addEventListener('click', () => {
+      const total = Math.ceil(Members.filtered().length / Members.state.perPage);
+      if (Members.state.page < total) { Members.state.page++; MembersUI.render(); }
+    });
+
+    document.getElementById('exportMembersBtn')?.addEventListener('click', () => {
+      const rows = Members.filtered().map(m => ({
+        ID: m.id, Name: m.name, Email: m.email, Phone: m.phone,
+        Type: m.type, Joined: formatDate(m.joinDate),
+        'Active Issues': Members.issuedCount(m.id)
+      }));
+      exportToCSV(rows, 'members');
+    });
+    document.getElementById('printMembersBtn')?.addEventListener('click', () => {
+      printElement(document.getElementById('membersTable')?.closest('.card'));
+    });
+  };
+
+  /* ---------- Issue page ---------- */
+  const initIssue = () => {
+    document.getElementById('issueMemberSelect')?.addEventListener('change', IssueUI.showInfo);
+    document.getElementById('issueBookSelect')?.addEventListener('change', IssueUI.showInfo);
+
+    document.getElementById('issueForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const mId = document.getElementById('issueMemberSelect').value;
+      const bId = document.getElementById('issueBookSelect').value;
+      const iDate = document.getElementById('issueDate').value;
+      const dDate = document.getElementById('dueDate').value;
+      const remarks = document.getElementById('issueRemarks').value;
+
+      if (!mId) { UI.showToast('Please select a member.', 'error'); return; }
+      if (!bId) { UI.showToast('Please select a book.', 'error'); return; }
+      if (!dDate || dDate <= iDate) { UI.showToast('Due date must be after issue date.', 'error'); return; }
+
+      const btn = document.getElementById('issueSubmitBtn');
+      UI.setButtonLoading(btn, true);
+      setTimeout(() => {
+        const rec = Issued.issue({ memberId: mId, bookId: bId, issueDate: iDate, dueDate: dDate, remarks });
+        UI.setButtonLoading(btn, false);
+        if (rec) {
+          UI.showToast('Book issued successfully.', 'success');
+          showReceipt(rec, 'issue');
+          document.getElementById('issueForm').reset();
+          IssueUI.refresh();
+          Dashboard.render();
+          updateSidebarCounts();
+        }
+      }, 400);
+    });
+
+    document.getElementById('issueResetBtn')?.addEventListener('click', () => {
+      document.getElementById('issueForm').reset();
+      IssueUI.refresh();
+    });
+  };
+
+  /* ---------- Return page ---------- */
+  const initReturn = () => {
+    document.getElementById('returnSearchInput')?.addEventListener('input', debounce((e) => {
+      Issued.state.return.search = e.target.value.trim();
+      ReturnUI.render();
+    }, 300));
+    document.getElementById('returnStatusFilter')?.addEventListener('change', (e) => {
+      Issued.state.return.status = e.target.value;
+      ReturnUI.render();
+    });
+
+    document.getElementById('returnTableBody')?.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-action="return-book"]');
+      if (!btn) return;
+      const issueId = btn.dataset.issue;
+      await handleReturn(issueId);
+    });
+  };
+
+  /* ---------- History page ---------- */
+  const initHistory = () => {
+    document.getElementById('historyStatusFilter')?.addEventListener('change', (e) => {
+      Issued.state.history.status = e.target.value; Issued.state.history.page = 1; HistoryUI.render();
+    });
+    document.getElementById('historyFromDate')?.addEventListener('change', (e) => {
+      Issued.state.history.from = e.target.value; Issued.state.history.page = 1; HistoryUI.render();
+    });
+    document.getElementById('historyToDate')?.addEventListener('change', (e) => {
+      Issued.state.history.to = e.target.value; Issued.state.history.page = 1; HistoryUI.render();
+    });
+    document.getElementById('historyMemberFilter')?.addEventListener('change', (e) => {
+      Issued.state.history.memberId = e.target.value; Issued.state.history.page = 1; HistoryUI.render();
+    });
+    document.getElementById('clearHistoryFilters')?.addEventListener('click', () => {
+      Issued.state.history = { status: '', from: '', to: '', memberId: '', page: 1, perPage: 15 };
+      document.getElementById('historyStatusFilter').value = '';
+      document.getElementById('historyFromDate').value = '';
+      document.getElementById('historyToDate').value = '';
+      document.getElementById('historyMemberFilter').value = '';
+      HistoryUI.render();
+    });
+    document.getElementById('historyPrevBtn')?.addEventListener('click', () => {
+      if (Issued.state.history.page > 1) { Issued.state.history.page--; HistoryUI.render(); }
+    });
+    document.getElementById('historyNextBtn')?.addEventListener('click', () => {
+      const total = Math.ceil(Issued.forHistoryPage().length / Issued.state.history.perPage);
+      if (Issued.state.history.page < total) { Issued.state.history.page++; HistoryUI.render(); }
+    });
+    document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
+      const rows = Issued.forHistoryPage().map(r => ({
+        'Issue ID': r.issueId, Book: r.bookTitle, Member: r.memberName,
+        'Issue Date': r.issueDate, 'Due Date': r.dueDate,
+        'Return Date': r.returnDate || '',
+        Status: Issued.liveStatus(r),
+        Fine: r.fine || 0
+      }));
+      exportToCSV(rows, 'issue-history');
+    });
+    document.getElementById('printHistoryBtn')?.addEventListener('click', () => {
+      printElement(document.getElementById('historyTable')?.closest('.card'));
+    });
+  };
+
+  /* ---------- Reports page ---------- */
+  const initReports = () => {
+    document.querySelectorAll('[data-report-btn]').forEach(btn => {
+      btn.addEventListener('click', () => Reports.render(btn.dataset.reportBtn));
+    });
+    document.getElementById('reportExportBtn')?.addEventListener('click', Reports.exportCSV);
+    document.getElementById('reportPrintBtn')?.addEventListener('click', Reports.print);
+    document.getElementById('reportCloseBtn')?.addEventListener('click', () => {
+      document.getElementById('reportDetailCard').hidden = true;
+    });
+  };
+
+  /* ---------- Settings page ---------- */
+  const initSettings = () => {
+    document.getElementById('settingsLibraryForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      Settings.saveLibraryInfo({
+        libraryName: document.getElementById('settingsLibraryName').value,
+        address: document.getElementById('settingsAddress').value,
+        contactEmail: document.getElementById('settingsEmail').value,
+        contactPhone: document.getElementById('settingsPhone').value
+      });
+    });
+    document.getElementById('settingsRulesForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      Settings.saveRules({
+        fineRate: document.getElementById('settingsFineRate').value,
+        borrowDays: document.getElementById('settingsBorrowDays').value,
+        maxBooks: document.getElementById('settingsMaxBooks').value
+      });
+    });
+    document.getElementById('settingsDarkMode')?.addEventListener('change', () => toggleDarkMode());
+
+    document.getElementById('backupDataBtn')?.addEventListener('click', Settings.backup);
+    document.getElementById('restoreFileInput')?.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file) await Settings.restore(file);
+      e.target.value = '';
+    });
+    document.getElementById('clearActivityBtn2')?.addEventListener('click', async () => {
+      const ok = await UI.confirm({
+        title: 'Clear Activity Log',
+        message: 'Delete all activity entries?',
+        confirmText: 'Clear',
+        variant: 'warning',
+        icon: '🧹'
+      });
+      if (ok) { Activity.clear(); Dashboard.renderActivity(); UI.showToast('Activity log cleared.', 'success'); }
+    });
+    document.getElementById('resetAllDataBtn')?.addEventListener('click', async () => {
+      const ok1 = await UI.confirm({
+        title: 'Reset All Data',
+        message: '<strong>This will delete ALL books, members, and issued records.</strong><br>Are you sure?',
+        confirmText: 'Yes, continue',
+        variant: 'danger',
+        icon: '⚠️'
+      });
+      if (!ok1) return;
+      const ok2 = await UI.confirm({
+        title: 'Final Confirmation',
+        message: 'This cannot be undone. Delete everything?',
+        confirmText: 'DELETE EVERYTHING',
+        variant: 'danger',
+        icon: '🔴'
+      });
+      if (ok2) Settings.resetAll();
+    });
+  };
+
+  /* ---------- Dashboard misc ---------- */
+  const initDashboardMisc = () => {
+    document.getElementById('clearActivityBtn')?.addEventListener('click', async () => {
+      const ok = await UI.confirm({
+        title: 'Clear Activity Log',
+        message: 'Delete all activity entries?',
+        confirmText: 'Clear',
+        variant: 'warning',
+        icon: '🧹'
+      });
+      if (ok) { Activity.clear(); Dashboard.renderActivity(); UI.showToast('Activity log cleared.', 'success'); }
+    });
+  };
+
+  /* ---------- Modal close wiring ---------- */
+  const initModals = () => {
+    document.querySelectorAll('[data-close-modal]').forEach(el => {
+      el.addEventListener('click', () => UI.closeModal(el.dataset.closeModal));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal:not([hidden])').forEach(m => UI.closeModal(m.id));
+      }
+    });
+  };
+
+  /* ---------- Keyboard shortcuts ---------- */
+  const initShortcuts = () => {
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+K → focus global search
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        document.getElementById('globalSearch')?.focus();
+      }
+      // Ctrl+D → toggle dark mode
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        toggleDarkMode();
+      }
+    });
+  };
+
+  /* ---------- Delegated actions ---------- */
+  const initDelegatedActions = () => {
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+
+      if (action === 'view-book')      return showBookView(id);
+      if (action === 'edit-book')      return showBookEdit(id);
+      if (action === 'delete-book')    return handleBookDelete(id);
+      if (action === 'issue-book')     return handleQuickIssue(id);
+      if (action === 'view-member')    return showMemberProfile(id);
+      if (action === 'edit-member')    return showMemberEdit(id);
+      if (action === 'delete-member')  return handleMemberDelete(id);
+    });
+
+    // Receipt print
+    document.getElementById('receiptPrintBtn')?.addEventListener('click', () => {
+      printElement(document.getElementById('receiptBody'));
+    });
+    document.getElementById('memberProfilePrintBtn')?.addEventListener('click', () => {
+      printElement(document.getElementById('memberProfileBody'));
+    });
+  };
+
+  /* ---------- Inactivity listener ---------- */
+  const initInactivity = () => {
+    ['click', 'keydown', 'mousemove', 'scroll'].forEach(evt => {
+      document.addEventListener(evt, debounce(() => Auth.resetInactivityTimer(), 1000), { passive: true });
+    });
+  };
+
+  return {
+    initLogin, initShell, initBooks, initMembers, initIssue, initReturn,
+    initHistory, initReports, initSettings, initDashboardMisc,
+    initModals, initShortcuts, initDelegatedActions, initInactivity
+  };
+})();
+
+/* ============================================================
+   FORM VALIDATION HELPERS
+   ============================================================ */
+const validateBookField = (id) => {
+  const el = document.getElementById(id);
+  if (!el) return true;
+  const v = el.value;
+  switch (id) {
+    case 'bookTitle':
+      if (!v.trim()) return Validation.setFieldError(el, 'Title is required.'), false;
+      if (v.trim().length < 2) return Validation.setFieldError(el, 'Title is too short.'), false;
+      break;
+    case 'bookAuthor':
+      if (!v.trim()) return Validation.setFieldError(el, 'Author is required.'), false;
+      break;
+    case 'bookIsbn':
+      if (!v.trim()) return Validation.setFieldError(el, 'ISBN is required.'), false;
+      if (!Validation.isIsbn(v)) return Validation.setFieldError(el, 'ISBN must be 10 or 13 digits.'), false;
+      if (Books.getAll().some(b => b.isbn === v.trim())) return Validation.setFieldError(el, 'ISBN already exists.'), false;
+      break;
+    case 'bookCategory':
+      if (!v) return Validation.setFieldError(el, 'Please select a category.'), false;
+      break;
+    case 'bookQuantity':
+      if (!Validation.isPositiveInt(v)) return Validation.setFieldError(el, 'Quantity must be ≥ 1.'), false;
+      break;
+    case 'bookYear':
+      if (v && !Validation.isYear(v)) return Validation.setFieldError(el, `Year must be 1900–${new Date().getFullYear()}.`), false;
+      break;
+    case 'bookPrice':
+      if (v && (Number(v) < 0 || !/^\d+(\.\d{1,2})?$/.test(v))) return Validation.setFieldError(el, 'Price must be a positive number.'), false;
+      break;
+  }
+  Validation.setFieldError(el, '');
+  return true;
+};
+
+const validateBookForm = () => {
+  const fields = ['bookTitle', 'bookAuthor', 'bookIsbn', 'bookCategory', 'bookQuantity', 'bookYear', 'bookPrice'];
+  return fields.map(validateBookField).every(Boolean);
+};
+
+const readBookForm = () => ({
+  title:    document.getElementById('bookTitle').value,
+  author:   document.getElementById('bookAuthor').value,
+  isbn:     document.getElementById('bookIsbn').value,
+  category: document.getElementById('bookCategory').value,
+  publisher:document.getElementById('bookPublisher').value,
+  year:     document.getElementById('bookYear').value,
+  quantity: document.getElementById('bookQuantity').value,
+  shelf:    document.getElementById('bookShelf').value,
+  price:    document.getElementById('bookPrice').value
+});
+
+const validateMemberField = (id) => {
+  const el = document.getElementById(id);
+  if (!el) return true;
+  const v = el.value;
+  switch (id) {
+    case 'memberName':
+      if (!v.trim()) return Validation.setFieldError(el, 'Name is required.'), false;
+      if (v.trim().length < 3) return Validation.setFieldError(el, 'Name must be at least 3 characters.'), false;
+      if (!Validation.isName(v)) return Validation.setFieldError(el, 'Only letters and spaces.'), false;
+      break;
+    case 'memberEmail':
+      if (!v.trim()) return Validation.setFieldError(el, 'Email is required.'), false;
+      if (!Validation.isEmail(v)) return Validation.setFieldError(el, 'Invalid email format.'), false;
+      if (Members.getAll().some(m => m.email.toLowerCase() === v.trim().toLowerCase()))
+        return Validation.setFieldError(el, 'Email already registered.'), false;
+      break;
+    case 'memberPhone':
+      if (!v.trim()) return Validation.setFieldError(el, 'Phone is required.'), false;
+      if (!Validation.isPhone(v)) return Validation.setFieldError(el, 'Must be exactly 10 digits.'), false;
+      break;
+    case 'memberType':
+      if (!v) return Validation.setFieldError(el, 'Please select a type.'), false;
+      break;
+  }
+  Validation.setFieldError(el, '');
+  return true;
+};
+
+const validateMemberForm = () => {
+  const fields = ['memberName', 'memberEmail', 'memberPhone', 'memberType'];
+  return fields.map(validateMemberField).every(Boolean);
+};
+
+const readMemberForm = () => ({
+  name:     document.getElementById('memberName').value,
+  email:    document.getElementById('memberEmail').value,
+  phone:    document.getElementById('memberPhone').value,
+  type:     document.getElementById('memberType').value,
+  joinDate: document.getElementById('memberJoinDate').value
+    ? new Date(document.getElementById('memberJoinDate').value).toISOString()
+    : new Date().toISOString(),
+  address:  document.getElementById('memberAddress').value
+});
+
+/* ============================================================
+   ACTION HANDLERS
+   ============================================================ */
+const handleBookDelete = async (id) => {
+  const b = Books.findById(id);
+  if (!b) return;
+  const ok = await UI.confirm({
+    title: 'Delete Book',
+    message: `Are you sure you want to delete "<strong>${escapeHTML(b.title)}</strong>"?`,
+    confirmText: 'Delete',
+    variant: 'danger',
+    icon: '🗑️'
+  });
+  if (!ok) return;
+  if (Books.remove(id)) {
+    UI.showToast('Book deleted.', 'success');
+    BooksUI.render();
+    Dashboard.updateStats();
+    updateSidebarCounts();
+  }
+};
+
+const handleMemberDelete = async (id) => {
+  const m = Members.findById(id);
+  if (!m) return;
+  const ok = await UI.confirm({
+    title: 'Delete Member',
+    message: `Delete "<strong>${escapeHTML(m.name)}</strong>"?`,
+    confirmText: 'Delete',
+    variant: 'danger',
+    icon: '🗑️'
+  });
+  if (!ok) return;
+  if (Members.remove(id)) {
+    UI.showToast('Member deleted.', 'success');
+    MembersUI.render();
+    updateSidebarCounts();
+  }
+};
+
+const handleQuickIssue = (bookId) => {
+  Router.go('issuePage');
+  setTimeout(() => {
+    IssueUI.refresh();
+    document.getElementById('issueBookSelect').value = bookId;
+    IssueUI.showInfo();
+  }, 200);
+};
+
+const handleReturn = async (issueId) => {
+  const rec = Issued.getAll().find(r => r.issueId === issueId);
+  if (!rec) return;
+  const settings = Storage.getSettings();
+  const today = todayISO();
+  const fine = Issued.calculateFine(rec.dueDate, today, settings.fineRate);
+  const ok = await UI.confirm({
+    title: 'Confirm Return',
+    message: `
+      <strong>Book:</strong> ${escapeHTML(rec.bookTitle)}<br>
+      <strong>Member:</strong> ${escapeHTML(rec.memberName)}<br>
+      <strong>Due Date:</strong> ${formatDate(rec.dueDate)}<br>
+      <strong>Return Date:</strong> ${formatDate(today)}<br>
+      ${fine > 0 ? `<br><strong style="color:var(--color-danger)">Fine Due: ${formatCurrency(fine)}</strong>` : '<br><em>No fine.</em>'}
+    `,
+    confirmText: 'Confirm Return',
+    variant: 'primary',
+    icon: '📥'
+  });
+  if (!ok) return;
+  const updated = Issued.returnBook(issueId);
+  if (updated) {
+    UI.showToast('Book returned successfully.', 'success');
+    showReceipt(updated, 'return');
+    ReturnUI.render();
+    HistoryUI.render();
+    Dashboard.render();
+    updateSidebarCounts();
+  }
+};
+
+/* ============================================================
+   MODAL RENDERERS
+   ============================================================ */
+const showBookView = (id) => {
+  const b = Books.findById(id);
+  if (!b) return;
+  const status = b.available === 0 ? 'danger' : (b.available <= 2 ? 'warning' : 'success');
+  const statusText = b.available === 0 ? 'Out of Stock' : (b.available <= 2 ? 'Low Stock' : 'Available');
+  document.getElementById('viewBookBody').innerHTML = `
+    <h3>${escapeHTML(b.title)}</h3>
+    <p class="text-muted mb-4">${escapeHTML(b.author)}</p>
+    <ul class="about-list">
+      <li><strong>ID:</strong> <code>${escapeHTML(b.id)}</code></li>
+      <li><strong>ISBN:</strong> ${escapeHTML(b.isbn)}</li>
+      <li><strong>Category:</strong> ${escapeHTML(b.category)}</li>
+      <li><strong>Publisher:</strong> ${escapeHTML(b.publisher || '—')}</li>
+      <li><strong>Year:</strong> ${b.year || '—'}</li>
+      <li><strong>Shelf:</strong> ${escapeHTML(b.shelf || '—')}</li>
+      <li><strong>Quantity:</strong> ${b.quantity}</li>
+      <li><strong>Available:</strong> ${b.available}</li>
+      <li><strong>Price:</strong> ${formatCurrency(b.price)}</li>
+      <li><strong>Status:</strong> <span class="badge badge-${status}">${statusText}</span></li>
+    </ul>
+  `;
+  UI.openModal('viewBookModal');
+};
+
+const showBookEdit = (id) => {
+  const b = Books.findById(id);
+  if (!b) return;
+  setValue('editBookId', b.id);
+  setValue('editBookTitleInput', b.title);
+  setValue('editBookAuthor', b.author);
+  setValue('editBookIsbn', b.isbn);
+  setValue('editBookCategory', b.category);
+  setValue('editBookPublisher', b.publisher);
+  setValue('editBookYear', b.year);
+  setValue('editBookQuantity', b.quantity);
+  setValue('editBookShelf', b.shelf);
+  setValue('editBookPrice', b.price);
+  UI.openModal('editBookModal');
+};
+
+const showMemberEdit = (id) => {
+  const m = Members.findById(id);
+  if (!m) return;
+  setValue('editMemberId', m.id);
+  setValue('editMemberName', m.name);
+  setValue('editMemberEmail', m.email);
+  setValue('editMemberPhone', m.phone);
+  setValue('editMemberType', m.type);
+  setValue('editMemberAddress', m.address);
+  UI.openModal('editMemberModal');
+};
+
+const showMemberProfile = (id) => {
+  const m = Members.findById(id);
+  if (!m) return;
+  const history = Issued.byMember(id);
+  const activeCount = Members.issuedCount(id);
+  const totalCount = Members.totalIssued(id);
+  const fines = Members.totalFines(id);
+  document.getElementById('memberProfileBody').innerHTML = `
+    <div class="flex items-center gap-4 mb-6">
+      ${UI.avatarHTML(m.name, 'lg')}
+      <div>
+        <h3>${escapeHTML(m.name)}</h3>
+        <p class="text-muted">${escapeHTML(m.id)} · ${escapeHTML(m.type)}</p>
+      </div>
+    </div>
+    <ul class="about-list mb-6">
+      <li><strong>Email:</strong> ${escapeHTML(m.email)}</li>
+      <li><strong>Phone:</strong> ${escapeHTML(m.phone)}</li>
+      <li><strong>Address:</strong> ${escapeHTML(m.address || '—')}</li>
+      <li><strong>Joined:</strong> ${formatDate(m.joinDate)}</li>
+    </ul>
+    <div class="stat-grid mb-6">
+      <div class="stat-card stat-card-primary"><div class="stat-body"><div class="stat-value">${totalCount}</div><div class="stat-label">Total Borrowed</div></div></div>
+      <div class="stat-card stat-card-warning"><div class="stat-body"><div class="stat-value">${activeCount}</div><div class="stat-label">Currently Issued</div></div></div>
+      <div class="stat-card stat-card-danger"><div class="stat-body"><div class="stat-value">${formatCurrency(fines)}</div><div class="stat-label">Total Fines</div></div></div>
+    </div>
+    <h4 class="mb-3">Issue History</h4>
+    ${history.length ? `
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead><tr><th>Issue ID</th><th>Book</th><th>Issued</th><th>Due</th><th>Status</th><th>Fine</th></tr></thead>
+          <tbody>
+            ${history.map(r => `
+              <tr>
+                <td><code>${escapeHTML(r.issueId)}</code></td>
+                <td>${escapeHTML(r.bookTitle)}</td>
+                <td>${formatDate(r.issueDate)}</td>
+                <td>${formatDate(r.dueDate)}</td>
+                <td>${Issued.liveStatus(r).toUpperCase()}</td>
+                <td>${formatCurrency(r.fine || 0)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : '<p class="text-muted">No issue history.</p>'}
+  `;
+  UI.openModal('memberProfileModal');
+};
+
+/**
+ * Shows a printable receipt for issue or return.
+ * @param {Object} rec
+ * @param {'issue'|'return'} kind
+ */
+const showReceipt = (rec, kind) => {
+  const s = Storage.getSettings();
+  const title = kind === 'issue' ? 'Book Issue Receipt' : 'Book Return Receipt';
+  document.getElementById('receiptTitle').textContent = title;
+  document.getElementById('receiptBody').innerHTML = `
+    <div class="receipt">
+      <div class="text-center mb-4">
+        <h3>${escapeHTML(s.libraryName)}</h3>
+        <p class="text-muted">${escapeHTML(s.address)}</p>
+        <p class="text-muted">${escapeHTML(s.contactEmail)} · ${escapeHTML(s.contactPhone)}</p>
+        <hr>
+        <h4>${escapeHTML(title)}</h4>
+      </div>
+      <ul class="about-list">
+        <li><strong>Issue ID:</strong> ${escapeHTML(rec.issueId)}</li>
+        <li><strong>Book:</strong> ${escapeHTML(rec.bookTitle)}</li>
+        <li><strong>Member:</strong> ${escapeHTML(rec.memberName)} (${escapeHTML(rec.memberId)})</li>
+        <li><strong>Issue Date:</strong> ${formatDate(rec.issueDate)}</li>
+        <li><strong>Due Date:</strong> ${formatDate(rec.dueDate)}</li>
+        ${rec.returnDate ? `<li><strong>Return Date:</strong> ${formatDate(rec.returnDate)}</li>` : ''}
+        ${rec.fine > 0 ? `<li><strong>Fine:</strong> <span class="text-danger">${formatCurrency(rec.fine)}</span></li>` : ''}
+        ${rec.remarks ? `<li><strong>Remarks:</strong> ${escapeHTML(rec.remarks)}</li>` : ''}
+      </ul>
+      <hr>
+      <p class="text-center text-muted">Thank you for using ${escapeHTML(s.libraryName)}!</p>
+    </div>
+  `;
+  UI.openModal('receiptModal');
+};
+
+/* ============================================================
+   EDIT MODAL SAVE HANDLERS (init once)
+   ============================================================ */
+const initEditModals = () => {
+  document.getElementById('editBookSaveBtn')?.addEventListener('click', () => {
+    const id = document.getElementById('editBookId').value;
+    const patch = {
+      title: document.getElementById('editBookTitleInput').value,
+      author: document.getElementById('editBookAuthor').value,
+      isbn: document.getElementById('editBookIsbn').value,
+      category: document.getElementById('editBookCategory').value,
+      publisher: document.getElementById('editBookPublisher').value,
+      year: document.getElementById('editBookYear').value,
+      quantity: document.getElementById('editBookQuantity').value,
+      shelf: document.getElementById('editBookShelf').value,
+      price: document.getElementById('editBookPrice').value
+    };
+    if (!patch.title.trim() || !patch.author.trim() || !patch.isbn.trim() || !patch.category || !patch.quantity) {
+      UI.showToast('Please fill all required fields.', 'error');
+      return;
+    }
+    if (Books.update(id, patch)) {
+      UI.showToast('Book updated.', 'success');
+      UI.closeModal('editBookModal');
+      BooksUI.render();
+      Dashboard.updateStats();
+    }
+  });
+
+  document.getElementById('editMemberSaveBtn')?.addEventListener('click', () => {
+    const id = document.getElementById('editMemberId').value;
+    const patch = {
+      name: document.getElementById('editMemberName').value,
+      email: document.getElementById('editMemberEmail').value,
+      phone: document.getElementById('editMemberPhone').value,
+      type: document.getElementById('editMemberType').value,
+      address: document.getElementById('editMemberAddress').value
+    };
+    if (!patch.name.trim() || !patch.email.trim() || !patch.phone.trim()) {
+      UI.showToast('Please fill all required fields.', 'error');
+      return;
+    }
+    if (Members.update(id, patch)) {
+      UI.showToast('Member updated.', 'success');
+      UI.closeModal('editMemberModal');
+      MembersUI.render();
+    }
+  });
+};
+
+/* ============================================================
+   HELPERS — SET / GET DOM VALUES
+   ============================================================ */
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+function setValue(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.value = v ?? '';
+}
+function updateSidebarCounts() {
+  setText('navBooksCount', Books.getAll().length);
+  setText('navMembersCount', Members.getAll().length);
+  const overdue = Issued.overdue().length;
+  const badge = document.getElementById('navOverdueCount');
+  if (badge) {
+    badge.hidden = overdue === 0;
+    badge.textContent = overdue;
+  }
+  const nb = document.getElementById('notificationCount');
+  const bell = document.getElementById('notificationBell');
+  if (nb) {
+    nb.hidden = overdue === 0;
+    nb.textContent = overdue;
+  }
+  if (bell) bell.classList.toggle('is-pulsing', overdue > 0);
+}
+
+/**
+ * Computes a pagination range like [1, '...', 4, 5, 6, '...', 20].
+ * @param {number} current
+ * @param {number} total
+ * @returns {Array<number|string>}
+ */
+function paginationRange(current, total) {
+  const delta = 2;
+  const range = [];
+  const rangeWithDots = [];
+  let l;
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      range.push(i);
+    }
+  }
+  for (const i of range) {
+    if (l) {
+      if (i - l === 2) rangeWithDots.push(l + 1);
+      else if (i - l !== 1) rangeWithDots.push('...');
+    }
+    rangeWithDots.push(i);
+    l = i;
+  }
+  return rangeWithDots;
+}
+
+/* ============================================================
+   EXPORT / PRINT UTILITIES
+   ============================================================ */
+/**
+ * Exports an array of objects to CSV.
+ * @param {Array<Object>} rows
+ * @param {string} filename
+ */
+function exportToCSV(rows, filename) {
+  try {
+    if (!rows || rows.length === 0) {
+      UI.showToast('Nothing to export.', 'warning');
+      return;
+    }
+    const headers = Object.keys(rows[0]);
+    const escape = (v) => {
+      const s = String(v ?? '');
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const lines = [
+      headers.join(','),
+      ...rows.map(r => headers.map(h => escape(r[h])).join(','))
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}-${todayISO()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    UI.showToast('CSV downloaded.', 'success');
+  } catch (err) {
+    console.error('[LMS] exportToCSV', err);
+    UI.showToast('Export failed.', 'error');
+  }
+}
+
+/**
+ * Opens the browser print dialog for a specific element.
+ * @param {HTMLElement} el
+ */
+function printElement(el) {
+  if (!el) return;
+  const printWindow = window.open('', '_blank', 'width=900,height=650');
+  if (!printWindow) {
+    UI.showToast('Allow pop-ups to print.', 'warning');
+    return;
+  }
+  const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+    .map(n => n.outerHTML).join('');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html><head><title>Print</title>${styles}
+    <style>
+      body { padding: 20px; background: #fff; color: #000; }
+      .btn, .card-header-actions, .filter-bar, .pagination { display: none !important; }
+    </style>
+    </head><body>${el.outerHTML}</body></html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => { printWindow.print(); printWindow.close(); }, 400);
+}
+
+/* ============================================================
+   DARK MODE
+   ============================================================ */
+function toggleDarkMode() {
+  const s = Storage.getSettings();
+  const next = !s.darkMode;
+  Storage.setSettings({ ...s, darkMode: next });
+  applyTheme(next);
+  const dm = document.getElementById('settingsDarkMode');
+  if (dm) dm.checked = next;
+}
+
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const toggle = document.getElementById('darkModeToggle');
+  if (toggle) toggle.setAttribute('aria-pressed', String(dark));
+}
+
+/* ============================================================
+   15. SAMPLE DATA SEEDER
+   ============================================================ */
+const seedSampleData = () => {
+  try {
+    if (!Storage.isEmpty()) return;
+
+    console.log('[LMS] Seeding sample data...');
+
+    const now = new Date();
+    const iso = (d) => d.toISOString();
+
+    // Books
+    const sampleBooks = [
+      { title: 'JavaScript: The Good Parts', author: 'Douglas Crockford', isbn: '9780596517748', category: 'Technology', publisher: "O'Reilly Media", year: 2008, quantity: 5, shelf: 'A-12', price: 450 },
+      { title: 'Clean Code', author: 'Robert C. Martin', isbn: '9780132350884', category: 'Technology', publisher: 'Prentice Hall', year: 2008, quantity: 4, shelf: 'A-13', price: 620 },
+      { title: 'The Pragmatic Programmer', author: 'Andrew Hunt', isbn: '9780201616224', category: 'Technology', publisher: 'Addison-Wesley', year: 1999, quantity: 3, shelf: 'A-14', price: 550 },
+      { title: 'A Brief History of Time', author: 'Stephen Hawking', isbn: '9780553380163', category: 'Science', publisher: 'Bantam', year: 1998, quantity: 6, shelf: 'B-01', price: 380 },
+      { title: 'The Selfish Gene', author: 'Richard Dawkins', isbn: '9780199291151', category: 'Science', publisher: 'Oxford', year: 2006, quantity: 2, shelf: 'B-02', price: 420 },
+      { title: 'Sapiens', author: 'Yuval Noah Harari', isbn: '9780099590088', category: 'History', publisher: 'Vintage', year: 2015, quantity: 5, shelf: 'C-05', price: 599 },
+      { title: 'The Diary of a Young Girl', author: 'Anne Frank', isbn: '9780553296983', category: 'Biography', publisher: 'Bantam', year: 1993, quantity: 4, shelf: 'D-03', price: 320 },
+      { title: 'Harry Potter and the Philosopher\'s Stone', author: 'J.K. Rowling', isbn: '9780747532699', category: 'Fiction', publisher: 'Bloomsbury', year: 1997, quantity: 8, shelf: 'E-01', price: 499 },
+      { title: 'The Very Hungry Caterpillar', author: 'Eric Carle', isbn: '9780241003008', category: 'Children', publisher: 'Puffin', year: 1969, quantity: 6, shelf: 'F-02', price: 250 },
+      { title: 'Oxford English Dictionary', author: 'Oxford Press', isbn: '9780199571123', category: 'Reference', publisher: 'Oxford', year: 2010, quantity: 2, shelf: 'G-01', price: 1500 }
+    ];
+    const books = sampleBooks.map((b, i) => ({
+      id: generateId('BK', i + 1),
+      ...b,
+      available: b.quantity,
+      addedDate: iso(new Date(now.getTime() - i * 24 * 60 * 60 * 1000))
+    }));
+
+    // Members
+    const sampleMembers = [
+      { name: 'Rahul Sharma', email: 'rahul@example.com', phone: '9876543210', address: '123 Main St, Mumbai', type: 'Student' },
+      { name: 'Priya Patel', email: 'priya@example.com', phone: '9876543211', address: '45 Park Ave, Delhi', type: 'Teacher' },
+      { name: 'Amit Kumar', email: 'amit@example.com', phone: '9876543212', address: '78 Lake Rd, Bengaluru', type: 'Public' },
+      { name: 'Sneha Reddy', email: 'sneha@example.com', phone: '9876543213', address: '9 Hill View, Hyderabad', type: 'Student' },
+      { name: 'Vikram Singh', email: 'vikram@example.com', phone: '9876543214', address: '22 Rose Garden, Jaipur', type: 'Teacher' }
+    ];
+    const members = sampleMembers.map((m, i) => ({
+      id: generateId('MB', i + 1),
+      ...m,
+      joinDate: iso(new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000))
+    }));
+
+    // Sample issued records
+    const today = now.toISOString().slice(0, 10);
+    const issued = [
+      {
+        issueId: generateId('ISS', 1),
+        bookId: books[0].id, bookTitle: books[0].title,
+        memberId: members[0].id, memberName: members[0].name,
+        issueDate: addDays(today, -5), dueDate: addDays(today, 9),
+        returnDate: null, status: 'issued', fine: 0, remarks: 'Active issue'
+      },
+      {
+        issueId: generateId('ISS', 2),
+        bookId: books[1].id, bookTitle: books[1].title,
+        memberId: members[1].id, memberName: members[1].name,
+        issueDate: addDays(today, -30), dueDate: addDays(today, -16),
+        returnDate: addDays(today, -12), status: 'returned', fine: 20, remarks: 'Returned with fine'
+      },
+      {
+        issueId: generateId('ISS', 3),
+        bookId: books[2].id, bookTitle: books[2].title,
+        memberId: members[3].id, memberName: members[3].name,
+        issueDate: addDays(today, -20), dueDate: addDays(today, -6),
+        returnDate: null, status: 'issued', fine: 0, remarks: 'Overdue'
+      }
+    ];
+
+    // Adjust available counts for issued records
+    issued.forEach(r => {
+      const b = books.find(x => x.id === r.bookId);
+      if (b && r.status !== 'returned') b.available -= 1;
+    });
+
+    Storage.setBooks(books);
+    Storage.setMembers(members);
+    Storage.setIssued(issued);
+    Storage.setSettings(Storage.DEFAULT_SETTINGS);
+    Storage.setActivity([
+      { id: generateId('ACT', 1), action: 'BOOK_ADDED', details: 'Sample data seeded', timestamp: iso(now) }
+    ]);
+
+    console.log('[LMS] Sample data seeded successfully.');
+  } catch (err) {
+    console.error('[LMS] seedSampleData failed', err);
+  }
+};
+
+/* ============================================================
+   16. APP BOOTSTRAP
+   ============================================================ */
+const App = (() => {
+
+  /**
+   * Shows the app shell and hides login page.
+   */
+  const showApp = () => {
+    document.getElementById('loginPage').hidden = true;
+    document.getElementById('loginPage').classList.remove('is-active');
+    document.getElementById('appShell').hidden = false;
+
+    // Load data
+    Books.load();
+    Members.load();
+    Issued.load();
+
+    // Apply theme
+    const s = Storage.getSettings();
+    applyTheme(!!s.darkMode);
+
+    // Apply branding
+    Settings.applyLibraryBranding();
+
+    // Initial renders
+    Dashboard.render();
+    BooksUI.render();
+    MembersUI.render();
+    IssueUI.refresh();
+    ReturnUI.render();
+    HistoryUI.render();
+    SettingsUI.render();
+    updateSidebarCounts();
+
+    // Start navigation
+    Router.go('dashboardPage');
+
+    // Auth inactivity
+    Auth.resetInactivityTimer();
+  };
+
+  /**
+   * Shows the login page.
+   */
+  const showLogin = () => {
+    document.getElementById('appShell').hidden = true;
+    const lp = document.getElementById('loginPage');
+    lp.hidden = false;
+    lp.classList.add('is-active');
+    // Set year
+    setText('loginYear', new Date().getFullYear());
+    // Load settings to display library name
+    const s = Storage.getSettings();
+    setText('loginLibraryName', s.libraryName);
+    setTimeout(() => document.getElementById('loginUsername')?.focus(), 100);
+  };
+
+  /**
+   * Bootstraps the app.
+   */
+  const init = () => {
+    console.log('[LMS] Initializing application...');
+
+    // Seed sample data on first run
+    seedSampleData();
+
+    // Set year in footer
+    setText('appFooterYear', new Date().getFullYear());
+
+    // Init all handlers
+    Handlers.initLogin();
+    Handlers.initShell();
+    Handlers.initBooks();
+    Handlers.initMembers();
+    Handlers.initIssue();
+    Handlers.initReturn();
+    Handlers.initHistory();
+    Handlers.initReports();
+    Handlers.initSettings();
+    Handlers.initDashboardMisc();
+    Handlers.initModals();
+    Handlers.initShortcuts();
+    Handlers.initDelegatedActions();
+    Handlers.initInactivity();
+    initEditModals();
+
+    UI.attachRipple();
+
+    // Start clock
+    setInterval(Dashboard.tickClock, 1000);
+
+    // Route: login vs app
+    if (Auth.isLoggedIn()) {
+      showApp();
+    } else {
+      showLogin();
+    }
+
+    console.log('[LMS] Application ready.');
+  };
+
+  return { init, showApp, showLogin };
+})();
+
+/* ============================================================
+   BOOTSTRAP ON DOM READY
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', App.init);
